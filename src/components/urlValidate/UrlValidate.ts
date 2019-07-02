@@ -1,3 +1,5 @@
+import {globalEventDelegate} from "../../utils/tools";
+
 export default class UrlValidate {
 
     static RESERVED_CHARACTERS: Array<string> = [
@@ -22,22 +24,26 @@ export default class UrlValidate {
         return CharCode >= 32 && CharCode <= 126;
     }
 
-    static liveChange(input: HTMLInputElement): void {
-        input.addEventListener('keypress', (event: KeyboardEvent) => {
+    static liveChange(inputClass: string): void {
+        globalEventDelegate('keypress', `.${inputClass}`, (field: HTMLElement, event: KeyboardEvent) => {
             event.preventDefault();
+            let input: HTMLInputElement = <HTMLInputElement> field;
 
             if (this.checkBaseCodePeriod(event.key)) {
                 let newSymbol: string = '';
                 newSymbol = this.validateSymbol(event.key);
                 input.value += newSymbol;
             }
+            input.value = this.validate(input.value);
         });
-        input.addEventListener('paste', (event: ClipboardEvent) => {
+        globalEventDelegate('paste', `.${inputClass}`, (field: HTMLElement, event: ClipboardEvent) => {
             event.preventDefault();
+            let input: HTMLInputElement = <HTMLInputElement> field;
             let pasteString: string = event.clipboardData.getData('text');
             let newSymbol: string = '';
             newSymbol = this.validateSymbol(pasteString);
             input.value += this.validateSymbol(newSymbol);
+            input.value = this.validate(input.value);
         });
     }
 }

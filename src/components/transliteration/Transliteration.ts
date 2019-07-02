@@ -1,3 +1,5 @@
+import {globalEventDelegate} from '../../utils/tools'
+
 export enum TransliterationConvertTypes {
     "ru_en" = "ru_en",
 }
@@ -44,7 +46,27 @@ const MAP_CONVERT_TYPES: TransliterationTypes = {
 
 export default class Transliteration {
 
-    static convert(convertType: TransliterationConvertTypes, str: string, option?: TransliterationConvertOption): string {
+    private CLASS_FIELD: string = 'gc-translit-field';
+
+    constructor(classField: string) {
+        this.CLASS_FIELD = classField;
+    }
+
+    private checkCodePeriod(char: string, exceptions?: Array<number>): boolean {
+        let exclusionKeys: Array<string> = ['Enter'];
+        if (exclusionKeys.indexOf(char) != -1) {
+            return false;
+        }
+        let CharCode: number = char.charCodeAt(0);
+        let exceptionsStatus: boolean = false;
+        if (exceptions) {
+            exceptionsStatus = CharCode >= exceptions[0] && CharCode <= exceptions[1]
+        }
+        let baseStatus: boolean = CharCode >= 32 && CharCode <= 126;
+        return baseStatus || exceptionsStatus;
+    }
+
+    public convert(convertType: TransliterationConvertTypes, str: string, option?: TransliterationConvertOption): string {
         // let expression: RegExp = new RegExp(MAP_CONVERT_TYPES[convertType].regular, 'mg');
         // let mapMatches: Array<string> = Array.from(new Set(str.match(expression)) );
         // for (let i = 0, len = mapMatches.length; i < len; i++) {
@@ -65,24 +87,10 @@ export default class Transliteration {
         return newStr;
     }
 
-    static checkCodePeriod(char: string, exceptions?: Array<number>): boolean {
-        let exclusionKeys: Array<string> = ['Enter'];
-        if (exclusionKeys.indexOf(char) != -1) {
-            return false;
-        }
-        let CharCode: number = char.charCodeAt(0);
-        let exceptionsStatus: boolean = false;
-        if (exceptions) {
-            exceptionsStatus = CharCode >= exceptions[0] && CharCode <= exceptions[1]
-        }
-        let baseStatus: boolean = CharCode >= 32 && CharCode <= 126;
-        return baseStatus || exceptionsStatus;
-    }
-
-    static liveChange(input: HTMLInputElement, convertType: TransliterationConvertTypes, option?: TransliterationConvertOption): void {
-        input.addEventListener('keypress', (event: KeyboardEvent) => {
+    public liveChange(convertType: TransliterationConvertTypes, option?: TransliterationConvertOption): void {
+        globalEventDelegate('keypress', `.${this.CLASS_FIELD}`, (field: HTMLElement, event: KeyboardEvent) => {
             event.preventDefault();
-
+            let input: HTMLInputElement = <HTMLInputElement> field;
             if (this.checkCodePeriod(event.key, MAP_CONVERT_TYPES[convertType].ascii) ) {
                 let newSymbol: string = this.convert(convertType, event.key, option);
                 input.value += newSymbol;
@@ -92,8 +100,9 @@ export default class Transliteration {
                 input.value = option.changeFinalString(input.value);
             }
         });
-        input.addEventListener('paste', (event: ClipboardEvent) => {
+        globalEventDelegate('paste', `.${this.CLASS_FIELD}`, (field: HTMLElement, event: ClipboardEvent) => {
             event.preventDefault();
+            let input: HTMLInputElement = <HTMLInputElement> field;
             let pasteString: string = event.clipboardData.getData('text');
             input.value += this.convert(convertType, pasteString, option);
 
@@ -101,12 +110,5 @@ export default class Transliteration {
                 input.value = option.changeFinalString(input.value);
             }
         });
-    }
-
-    static liveChangeAll(inputClass: string, convertType: TransliterationConvertTypes, option?: TransliterationConvertOption): void {
-        let inputs: HTMLCollectionOf<Element> = document.getElementsByClassName(inputClass);
-        for (let i = 0, len = inputs.length; i < len; i++) {
-            this.liveChange(<HTMLInputElement>inputs.item(i), convertType, option);
-        }
     }
 }

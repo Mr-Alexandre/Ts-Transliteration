@@ -12,15 +12,15 @@ export function definitionElementOnClick(event: Event, selector: string): Elemen
     return  ( <Element> event.target ).closest(`${selector}`);
 }
 
-export function globalEventDelegate(event: string, selector: string, callbackSuccess: Function, callbackFailed?: Function): void{
+export function globalEventDelegate(event: string, selector: string, callbackSuccess: Function): void{
     addEventListener(event, (event: Event) => {
-        let element: Element = definitionElementOnClick(event, selector);
+        let element: HTMLElement = <HTMLElement>definitionElementOnClick(event, selector);
 
         if ( element ) {
-            callbackSuccess(element);
+            callbackSuccess(element, event);
             return;
         } else if ( callbackFailed ) {
-            callbackFailed(event.target);
+            callbackFailed(<HTMLElement>event.target, event);
         }
     });
 }
